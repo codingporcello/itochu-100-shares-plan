@@ -1,0 +1,370 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>伊藤忠100股計畫助手</title>
+    <link rel="stylesheet" href="styles.css?v=20260604-5">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.9/dist/chart.umd.min.js" defer></script>
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="hero">
+        <div>
+          <p class="eyebrow">Itochu 100 Shares Plan</p>
+          <h1>伊藤忠100股計畫助手</h1>
+          <p class="subtitle">長期累積到 100 股的小型個人儀表板，幫你記錄每一次買進，也提醒自己不要衝動加碼。</p>
+        </div>
+        <div class="stock-badge">
+          <span id="stockCodeText">8001</span>
+          <strong id="stockNameText">伊藤忠</strong>
+        </div>
+      </section>
+
+      <section class="panel overview-panel">
+        <div class="panel-heading">
+          <div>
+            <p class="section-label">Progress</p>
+            <h2>持股總覽</h2>
+          </div>
+          <span class="status-pill" id="progressPill">第 0 股</span>
+        </div>
+
+        <div class="overview-layout">
+          <div class="progress-hero">
+            <strong id="mainProgressText">0 / 100 股</strong>
+            <span id="remainingText">剩餘 100 股</span>
+            <div class="progress-track large" aria-label="持股完成率">
+              <span id="progressBar"></span>
+            </div>
+          </div>
+
+          <div class="metric-grid overview-metrics">
+            <div class="metric">
+              <span>股票名稱</span>
+              <strong id="overviewName">伊藤忠</strong>
+            </div>
+            <div class="metric">
+              <span>股票代號</span>
+              <strong id="overviewCode">8001</strong>
+            </div>
+            <div class="metric">
+              <span>目前持股</span>
+              <strong id="currentSharesText">0 股</strong>
+            </div>
+            <div class="metric">
+              <span>目標持股</span>
+              <strong id="targetSharesText">100 股</strong>
+            </div>
+            <div class="metric">
+              <span>完成率</span>
+              <strong id="completionText">0%</strong>
+            </div>
+            <div class="metric">
+              <span>剩餘股數</span>
+              <strong id="remainingMetricText">100 股</strong>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="dashboard-grid">
+        <section class="panel">
+          <div class="panel-heading">
+            <div>
+              <p class="section-label">Cost</p>
+              <h2>成本追蹤</h2>
+            </div>
+          </div>
+
+          <div class="form-grid compact">
+            <label class="field">
+              <span>目前價格</span>
+              <input id="currentPrice" type="number" inputmode="decimal" min="0" step="0.5" placeholder="例：1851">
+            </label>
+            <label class="field">
+              <span>今日最多投入金額</span>
+              <input id="maxDailyInvestment" type="number" inputmode="decimal" min="0" step="1" placeholder="例：150000">
+            </label>
+          </div>
+
+          <button class="primary-button generate-button" type="button" id="generateButton">產生建議</button>
+
+          <div class="metric-grid cost-grid">
+            <div class="metric">
+              <span>總投入金額</span>
+              <strong id="totalInvestedText">-</strong>
+            </div>
+            <div class="metric">
+              <span>平均成本</span>
+              <strong id="averageCostText">-</strong>
+            </div>
+            <div class="metric">
+              <span>目前價格</span>
+              <strong id="currentPriceText">-</strong>
+            </div>
+            <div class="metric">
+              <span>未實現損益</span>
+              <strong id="unrealizedPnlText">-</strong>
+            </div>
+            <div class="metric">
+              <span>損益百分比</span>
+              <strong id="pnlPercentText">-</strong>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-heading">
+            <div>
+              <p class="section-label">Guardrail</p>
+              <h2>個人規則設定</h2>
+            </div>
+          </div>
+
+          <div class="rules-list">
+            <div class="rule-card">
+              <div class="rule-title">
+                <strong>小買</strong>
+                <span>先試 1 股</span>
+              </div>
+              <div class="rule-controls">
+                <label>
+                  <span>回檔幅度</span>
+                  <input id="smallDropPercent" type="number" min="0" step="0.1">
+                  <em>%</em>
+                </label>
+                <label>
+                  <span>上限股數</span>
+                  <input id="smallMaxShares" type="number" min="0" step="1">
+                  <em>股</em>
+                </label>
+              </div>
+            </div>
+            <div class="rule-card">
+              <div class="rule-title">
+                <strong>中買</strong>
+                <span>回檔再加</span>
+              </div>
+              <div class="rule-controls">
+                <label>
+                  <span>回檔幅度</span>
+                  <input id="mediumDropPercent" type="number" min="0" step="0.1">
+                  <em>%</em>
+                </label>
+                <label>
+                  <span>上限股數</span>
+                  <input id="mediumMaxShares" type="number" min="0" step="1">
+                  <em>股</em>
+                </label>
+              </div>
+            </div>
+            <div class="rule-card">
+              <div class="rule-title">
+                <strong>大跌</strong>
+                <span>只等深跌</span>
+              </div>
+              <div class="rule-controls">
+                <label>
+                  <span>回檔幅度</span>
+                  <input id="largeDropPercent" type="number" min="0" step="0.1">
+                  <em>%</em>
+                </label>
+                <label>
+                  <span>上限股數</span>
+                  <input id="largeMaxShares" type="number" min="0" step="1">
+                  <em>股</em>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <p class="soft-note" id="ruleNote">掛單價格會依目前價格動態計算，不再綁定固定價位。</p>
+        </section>
+      </section>
+
+      <section class="panel chart-panel">
+        <div class="panel-heading">
+          <div>
+            <p class="section-label">Chart</p>
+            <h2>走勢圖</h2>
+          </div>
+          <div class="chart-actions">
+            <div class="segmented-control" role="group" aria-label="走勢期間">
+              <button type="button" class="period-button is-active" data-period="1m">1個月</button>
+              <button type="button" class="period-button" data-period="6m">6個月</button>
+              <button type="button" class="period-button" data-period="1y">1年</button>
+            </div>
+            <button class="ghost-button" type="button" id="toggleChartButton" aria-expanded="true">收起走勢圖</button>
+          </div>
+        </div>
+
+        <div id="chartContent">
+          <div class="chart-meta">
+            <span id="chartSourceText">資料來源：等待載入</span>
+            <span id="chartUpdatedText">最後更新：-</span>
+          </div>
+          <div class="chart-wrap">
+            <canvas id="priceChart" aria-label="伊藤忠收盤價走勢圖"></canvas>
+            <p class="empty-state chart-empty" id="chartEmpty" hidden>目前無法取得走勢資料</p>
+          </div>
+
+          <details class="debug-box" open>
+            <summary>Debug</summary>
+            <dl>
+              <div>
+                <dt>使用的資料來源</dt>
+                <dd id="debugSource">-</dd>
+              </div>
+              <div>
+                <dt>API URL</dt>
+                <dd id="debugApiUrl">-</dd>
+              </div>
+              <div>
+                <dt>回應狀態碼</dt>
+                <dd id="debugStatusCode">-</dd>
+              </div>
+              <div>
+                <dt>錯誤訊息</dt>
+                <dd id="debugErrorMessage">-</dd>
+              </div>
+              <div>
+                <dt>是否進入備援資料源</dt>
+                <dd id="debugFallback">否</dd>
+              </div>
+            </dl>
+          </details>
+
+          <div class="chart-import">
+            <div class="chart-import-heading">
+              <div>
+                <strong>手動匯入走勢資料</strong>
+                <span>API 失敗時可貼上 CSV，圖表會使用 close 畫線。</span>
+              </div>
+              <button class="ghost-button" type="button" id="clearChartDataButton">清除走勢資料</button>
+            </div>
+            <textarea id="chartCsvInput" rows="5" spellcheck="false" placeholder="date,open,high,low,close,volume&#10;2026-06-01,1850,1870,1840,1860,1000000&#10;2026-06-02,1860,1880,1830,1850,1200000&#10;&#10;或：&#10;date,close&#10;2026-06-01,1860&#10;2026-06-02,1850"></textarea>
+            <div class="button-row left">
+              <button class="primary-button" type="button" id="importChartCsvButton">匯入走勢資料</button>
+              <span class="soft-note" id="chartImportStatus"></span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel" id="orderPanel">
+        <div class="panel-heading">
+          <div>
+            <p class="section-label">Orders</p>
+            <h2>今日掛單建議</h2>
+          </div>
+          <span class="status-pill" id="orderStatus">待輸入</span>
+        </div>
+
+        <div class="evaluation-box" id="evaluationBox">
+          <div>
+            <span>今日評價</span>
+            <strong id="todayRating">等待價格</strong>
+          </div>
+          <p id="todayReason">輸入目前價格後，會顯示是否適合加碼。</p>
+        </div>
+
+        <div class="warning-box" id="warningBox">
+          <strong id="warningTitle">今日追價警告</strong>
+          <p id="warningText">工具會依照平均成本與最近成交均價提醒你不要衝動追價。</p>
+        </div>
+
+        <p class="summary-text" id="orderSummary">輸入目前價格與今日最多投入金額後，會產生掛單建議。</p>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>類型</th>
+                <th>建議價格</th>
+                <th>建議股數</th>
+                <th>預估金額</th>
+                <th>理由</th>
+              </tr>
+            </thead>
+            <tbody id="ordersBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-heading">
+          <div>
+            <p class="section-label">Records</p>
+            <h2>交易紀錄</h2>
+          </div>
+          <button class="ghost-button" type="button" id="clearTradesButton">清空紀錄</button>
+        </div>
+
+        <form class="trade-form" id="tradeForm">
+          <input id="tradeId" type="hidden">
+          <label class="field">
+            <span>日期</span>
+            <input id="tradeDate" type="date" required>
+          </label>
+          <label class="field">
+            <span>買入價格</span>
+            <input id="tradePrice" type="number" inputmode="decimal" min="0" step="0.5" required>
+          </label>
+          <label class="field">
+            <span>股數</span>
+            <input id="tradeShares" type="number" inputmode="numeric" min="1" step="1" required>
+          </label>
+          <label class="field">
+            <span>備註</span>
+            <input id="tradeNote" type="text" placeholder="例：NISA">
+          </label>
+          <button class="primary-button" type="submit" id="saveTradeButton">新增交易</button>
+          <button class="ghost-button" type="button" id="cancelEditButton" hidden>取消編輯</button>
+        </form>
+
+        <details class="csv-box">
+          <summary>匯入 CSV</summary>
+          <textarea id="csvInput" rows="5" spellcheck="false" placeholder="日期,價格,股數,備註&#10;2026-05-26,1920,10,初始建倉&#10;2026-05-27,1918,10,加碼&#10;2026-06-04,1850,1,NISA"></textarea>
+          <div class="button-row left">
+            <button class="ghost-button" type="button" id="importCsvButton">匯入</button>
+            <span class="soft-note" id="csvStatus"></span>
+          </div>
+        </details>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>日期</th>
+                <th>買入價格</th>
+                <th>股數</th>
+                <th>備註</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="tradesBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel future-panel">
+        <div class="panel-heading">
+          <div>
+            <p class="section-label">Future</p>
+            <h2>未來預留功能</h2>
+          </div>
+        </div>
+        <div class="future-grid">
+          <span>API自動同步</span>
+          <span>NISA追蹤</span>
+          <span>月度投入統計</span>
+          <span>配息追蹤</span>
+          <span>投資日誌</span>
+        </div>
+      </section>
+    </main>
+
+    <script src="script.js?v=20260604-5"></script>
+  </body>
+</html>
