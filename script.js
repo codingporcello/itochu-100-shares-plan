@@ -7,7 +7,10 @@ const defaults = {
   currentPrice: "",
   maxDailyInvestment: "",
   chartPeriod: "1m",
-  chartCollapsed: false,
+  chartCollapsed: true,
+  rulesCollapsed: true,
+  collapseSettingsVersion: 1,
+  seedTradesInitialized: true,
   chartData: [],
   chartImportedAt: "",
   rules: {
@@ -63,6 +66,8 @@ const elements = {
   mediumMaxShares: document.getElementById("mediumMaxShares"),
   largeDropPercent: document.getElementById("largeDropPercent"),
   largeMaxShares: document.getElementById("largeMaxShares"),
+  toggleRulesButton: document.getElementById("toggleRulesButton"),
+  rulesContent: document.getElementById("rulesContent"),
   periodButtons: document.querySelectorAll(".period-button"),
   toggleChartButton: document.getElementById("toggleChartButton"),
   chartContent: document.getElementById("chartContent"),
@@ -103,8 +108,16 @@ function loadState() {
     return {
       ...clone(defaults),
       ...saved,
+      chartCollapsed: saved.collapseSettingsVersion === defaults.collapseSettingsVersion ? Boolean(saved.chartCollapsed) : true,
+      rulesCollapsed: saved.collapseSettingsVersion === defaults.collapseSettingsVersion ? Boolean(saved.rulesCollapsed) : true,
+      collapseSettingsVersion: defaults.collapseSettingsVersion,
       rules: normalizeRules(saved.rules),
-      trades: seedInitialTrades(Array.isArray(saved.trades) ? saved.trades : []),
+      seedTradesInitialized: true,
+      trades: saved.seedTradesInitialized
+        ? Array.isArray(saved.trades)
+          ? saved.trades
+          : []
+        : seedInitialTrades(Array.isArray(saved.trades) ? saved.trades : []),
     };
   } catch {
     return clone(defaults);
@@ -528,13 +541,24 @@ function initializeInputs() {
   elements.mediumMaxShares.value = state.rules.mediumMaxShares;
   elements.largeDropPercent.value = state.rules.largeDropPercent;
   elements.largeMaxShares.value = state.rules.largeMaxShares;
+  setRulesCollapsed(Boolean(state.rulesCollapsed));
   setActivePeriod(state.chartPeriod || defaults.chartPeriod);
   setChartCollapsed(Boolean(state.chartCollapsed));
   resetTradeForm();
 }
 
+function setRulesCollapsed(isCollapsed) {
+  state.rulesCollapsed = isCollapsed;
+  state.collapseSettingsVersion = defaults.collapseSettingsVersion;
+  elements.rulesContent.hidden = isCollapsed;
+  elements.toggleRulesButton.textContent = isCollapsed ? "打開個人規則" : "收起個人規則";
+  elements.toggleRulesButton.setAttribute("aria-expanded", String(!isCollapsed));
+  saveState();
+}
+
 function setChartCollapsed(isCollapsed) {
   state.chartCollapsed = isCollapsed;
+  state.collapseSettingsVersion = defaults.collapseSettingsVersion;
   elements.chartContent.hidden = isCollapsed;
   elements.toggleChartButton.textContent = isCollapsed ? "打開走勢圖" : "收起走勢圖";
   elements.toggleChartButton.setAttribute("aria-expanded", String(!isCollapsed));
@@ -774,6 +798,7 @@ function renderChart(data) {
 );
 
 elements.generateButton.addEventListener("click", generateNow);
+elements.toggleRulesButton.addEventListener("click", () => setRulesCollapsed(!state.rulesCollapsed));
 elements.toggleChartButton.addEventListener("click", () => setChartCollapsed(!state.chartCollapsed));
 elements.periodButtons.forEach((button) => {
   button.addEventListener("click", () => loadChart(button.dataset.period));
@@ -786,6 +811,7 @@ elements.cancelEditButton.addEventListener("click", resetTradeForm);
 elements.importCsvButton.addEventListener("click", importCsv);
 elements.clearTradesButton.addEventListener("click", () => {
   state.trades = [];
+  state.seedTradesInitialized = true;
   resetTradeForm();
   render();
 });

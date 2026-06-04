@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>伊藤忠100股計畫助手</title>
-    <link rel="stylesheet" href="styles.css?v=20260604-5">
+    <link rel="stylesheet" href="styles.css?v=20260604-6">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.9/dist/chart.umd.min.js" defer></script>
   </head>
   <body>
@@ -120,66 +120,69 @@
               <p class="section-label">Guardrail</p>
               <h2>個人規則設定</h2>
             </div>
+            <button class="ghost-button" type="button" id="toggleRulesButton" aria-expanded="false">打開個人規則</button>
           </div>
 
-          <div class="rules-list">
-            <div class="rule-card">
-              <div class="rule-title">
-                <strong>小買</strong>
-                <span>先試 1 股</span>
+          <div id="rulesContent">
+            <div class="rules-list">
+              <div class="rule-card">
+                <div class="rule-title">
+                  <strong>小買</strong>
+                  <span>先試 1 股</span>
+                </div>
+                <div class="rule-controls">
+                  <label>
+                    <span>回檔幅度</span>
+                    <input id="smallDropPercent" type="number" min="0" step="0.1">
+                    <em>%</em>
+                  </label>
+                  <label>
+                    <span>上限股數</span>
+                    <input id="smallMaxShares" type="number" min="0" step="1">
+                    <em>股</em>
+                  </label>
+                </div>
               </div>
-              <div class="rule-controls">
-                <label>
-                  <span>回檔幅度</span>
-                  <input id="smallDropPercent" type="number" min="0" step="0.1">
-                  <em>%</em>
-                </label>
-                <label>
-                  <span>上限股數</span>
-                  <input id="smallMaxShares" type="number" min="0" step="1">
-                  <em>股</em>
-                </label>
+              <div class="rule-card">
+                <div class="rule-title">
+                  <strong>中買</strong>
+                  <span>回檔再加</span>
+                </div>
+                <div class="rule-controls">
+                  <label>
+                    <span>回檔幅度</span>
+                    <input id="mediumDropPercent" type="number" min="0" step="0.1">
+                    <em>%</em>
+                  </label>
+                  <label>
+                    <span>上限股數</span>
+                    <input id="mediumMaxShares" type="number" min="0" step="1">
+                    <em>股</em>
+                  </label>
+                </div>
+              </div>
+              <div class="rule-card">
+                <div class="rule-title">
+                  <strong>大跌</strong>
+                  <span>只等深跌</span>
+                </div>
+                <div class="rule-controls">
+                  <label>
+                    <span>回檔幅度</span>
+                    <input id="largeDropPercent" type="number" min="0" step="0.1">
+                    <em>%</em>
+                  </label>
+                  <label>
+                    <span>上限股數</span>
+                    <input id="largeMaxShares" type="number" min="0" step="1">
+                    <em>股</em>
+                  </label>
+                </div>
               </div>
             </div>
-            <div class="rule-card">
-              <div class="rule-title">
-                <strong>中買</strong>
-                <span>回檔再加</span>
-              </div>
-              <div class="rule-controls">
-                <label>
-                  <span>回檔幅度</span>
-                  <input id="mediumDropPercent" type="number" min="0" step="0.1">
-                  <em>%</em>
-                </label>
-                <label>
-                  <span>上限股數</span>
-                  <input id="mediumMaxShares" type="number" min="0" step="1">
-                  <em>股</em>
-                </label>
-              </div>
-            </div>
-            <div class="rule-card">
-              <div class="rule-title">
-                <strong>大跌</strong>
-                <span>只等深跌</span>
-              </div>
-              <div class="rule-controls">
-                <label>
-                  <span>回檔幅度</span>
-                  <input id="largeDropPercent" type="number" min="0" step="0.1">
-                  <em>%</em>
-                </label>
-                <label>
-                  <span>上限股數</span>
-                  <input id="largeMaxShares" type="number" min="0" step="1">
-                  <em>股</em>
-                </label>
-              </div>
-            </div>
-          </div>
 
-          <p class="soft-note" id="ruleNote">掛單價格會依目前價格動態計算，不再綁定固定價位。</p>
+            <p class="soft-note" id="ruleNote">掛單價格會依目前價格動態計算，不再綁定固定價位。</p>
+          </div>
         </section>
       </section>
 
@@ -195,7 +198,7 @@
               <button type="button" class="period-button" data-period="6m">6個月</button>
               <button type="button" class="period-button" data-period="1y">1年</button>
             </div>
-            <button class="ghost-button" type="button" id="toggleChartButton" aria-expanded="true">收起走勢圖</button>
+            <button class="ghost-button" type="button" id="toggleChartButton" aria-expanded="false">打開走勢圖</button>
           </div>
         </div>
 
@@ -365,6 +368,6 @@
       </section>
     </main>
 
-    <script src="script.js?v=20260604-5"></script>
+    <script src="script.js?v=20260604-6"></script>
   </body>
 </html>
