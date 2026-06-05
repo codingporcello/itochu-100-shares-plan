@@ -246,10 +246,29 @@ h2 {
   gap: 7px;
 }
 
-.field span {
+.field span,
+.budget-inline span {
   color: #324039;
   font-size: 0.88rem;
   font-weight: 750;
+}
+
+.budget-inline {
+  display: grid;
+  gap: 7px;
+  min-height: 44px;
+}
+
+.budget-inline strong {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid rgba(36, 116, 100, 0.18);
+  border-radius: 8px;
+  background: var(--accent-soft);
+  color: var(--accent-dark);
+  font-size: 1.08rem;
 }
 
 .field input,
@@ -641,6 +660,55 @@ tbody tr:last-child td {
   text-align: center;
 }
 
+.monthly-budget-box {
+  display: grid;
+  gap: 14px;
+  margin-bottom: 18px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: linear-gradient(135deg, #f6fbf8, #fffaf0);
+}
+
+.budget-highlight {
+  display: grid;
+  gap: 5px;
+  padding: 18px;
+  border: 1px solid rgba(36, 116, 100, 0.16);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.budget-highlight span,
+.budget-highlight small {
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.budget-highlight span {
+  font-size: 0.84rem;
+}
+
+.budget-highlight strong {
+  font-size: clamp(1.8rem, 4vw, 2.8rem);
+  line-height: 1.1;
+}
+
+.budget-highlight small {
+  line-height: 1.55;
+}
+
+.budget-form {
+  display: grid;
+  grid-template-columns: 0.9fr 1fr 1.2fr auto auto;
+  gap: 12px;
+  align-items: end;
+}
+
+.compact-table table {
+  min-width: 560px;
+}
+
 .trade-form {
   display: grid;
   grid-template-columns: 1fr 1fr 0.7fr 1fr auto auto;
@@ -753,6 +821,10 @@ tbody tr:last-child td {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .budget-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .future-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -782,6 +854,7 @@ tbody tr:last-child td {
   .form-grid,
   .form-grid.compact,
   .trade-form,
+  .budget-form,
   .future-grid,
   .rule-controls {
     grid-template-columns: 1fr;

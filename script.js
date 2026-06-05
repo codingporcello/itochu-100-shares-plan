@@ -5,7 +5,6 @@ const defaults = {
   stockCode: "8001",
   targetShares: 100,
   currentPrice: "",
-  maxDailyInvestment: "",
   chartPeriod: "1m",
   chartCollapsed: true,
   rulesCollapsed: true,
@@ -13,6 +12,7 @@ const defaults = {
   seedTradesInitialized: true,
   chartData: [],
   chartImportedAt: "",
+  budgets: [],
   rules: {
     smallDropPercent: 0.3,
     smallMaxShares: 1,
@@ -44,7 +44,7 @@ const elements = {
   completionText: document.getElementById("completionText"),
   remainingMetricText: document.getElementById("remainingMetricText"),
   currentPrice: document.getElementById("currentPrice"),
-  maxDailyInvestment: document.getElementById("maxDailyInvestment"),
+  costMonthlyRemainingText: document.getElementById("costMonthlyRemainingText"),
   totalInvestedText: document.getElementById("totalInvestedText"),
   averageCostText: document.getElementById("averageCostText"),
   currentPriceText: document.getElementById("currentPriceText"),
@@ -84,6 +84,17 @@ const elements = {
   importChartCsvButton: document.getElementById("importChartCsvButton"),
   clearChartDataButton: document.getElementById("clearChartDataButton"),
   chartImportStatus: document.getElementById("chartImportStatus"),
+  budgetMonthText: document.getElementById("budgetMonthText"),
+  monthlyRemainingText: document.getElementById("monthlyRemainingText"),
+  monthlyBudgetDetail: document.getElementById("monthlyBudgetDetail"),
+  budgetForm: document.getElementById("budgetForm"),
+  budgetId: document.getElementById("budgetId"),
+  budgetMonth: document.getElementById("budgetMonth"),
+  budgetAmount: document.getElementById("budgetAmount"),
+  budgetNote: document.getElementById("budgetNote"),
+  saveBudgetButton: document.getElementById("saveBudgetButton"),
+  cancelBudgetEditButton: document.getElementById("cancelBudgetEditButton"),
+  budgetsBody: document.getElementById("budgetsBody"),
   tradeForm: document.getElementById("tradeForm"),
   tradeId: document.getElementById("tradeId"),
   tradeDate: document.getElementById("tradeDate"),
@@ -112,6 +123,7 @@ function loadState() {
       rulesCollapsed: saved.collapseSettingsVersion === defaults.collapseSettingsVersion ? Boolean(saved.rulesCollapsed) : true,
       collapseSettingsVersion: defaults.collapseSettingsVersion,
       rules: normalizeRules(saved.rules),
+      budgets: Array.isArray(saved.budgets) ? saved.budgets : [],
       seedTradesInitialized: true,
       trades: saved.seedTradesInitialized
         ? Array.isArray(saved.trades)
@@ -130,6 +142,10 @@ function clone(value) {
 
 function createId() {
   return `trade-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function createBudgetId() {
+  return `budget-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
 function normalizeRules(savedRules = {}) {
@@ -197,6 +213,36 @@ function sortedTrades() {
   return [...state.trades].sort((a, b) => a.date.localeCompare(b.date));
 }
 
+function sortedBudgets() {
+  return [...state.budgets].sort((a, b) => b.month.localeCompare(a.month));
+}
+
+function getCurrentMonthKey() {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function formatMonthLabel(monthKey) {
+  const [year, month] = String(monthKey).split("-");
+  if (!year || !month) return monthKey || "-";
+  return `${year}年${Number(month)}月`;
+}
+
+function getMonthlyBudgetSummary(monthKey = getCurrentMonthKey()) {
+  const budgetAmount = state.budgets
+    .filter((budget) => budget.month === monthKey)
+    .reduce((sum, budget) => sum + budget.amount, 0);
+  const spentAmount = state.trades
+    .filter((trade) => trade.date && trade.date.slice(0, 7) === monthKey)
+    .reduce((sum, trade) => sum + trade.price * trade.shares, 0);
+  return {
+    monthKey,
+    budgetAmount,
+    spentAmount,
+    remainingAmount: budgetAmount - spentAmount,
+  };
+}
+
 function getPortfolio() {
   const totalShares = state.trades.reduce((sum, trade) => sum + trade.shares, 0);
   const totalInvested = state.trades.reduce((sum, trade) => sum + trade.price * trade.shares, 0);
@@ -245,21 +291,25 @@ function getOrderCandidates(currentPrice) {
 
 function buildOrders() {
   const currentPrice = parseNumber(elements.currentPrice.value);
-  const maxDailyInvestment = parseNumber(elements.maxDailyInvestment.value);
+  const { budgetAmount, remainingAmount } = getMonthlyBudgetSummary();
   const { totalShares } = getPortfolio();
   const remainingTarget = Math.max(state.targetShares - totalShares, 0);
 
-  if (!currentPrice || maxDailyInvestment === null) {
-    return { orders: [], message: "輸入目前價格與今日最多投入金額後，會產生掛單建議。", needsInput: true };
+  if (!currentPrice) {
+    return { orders: [], message: "輸入目前價格後，會依本月剩餘金額產生掛單建議。", needsInput: true };
+  }
+
+  if (budgetAmount <= 0) {
+    return { orders: [], message: "尚未登錄本月預算，請先在交易紀錄區登錄當月預算。" };
   }
 
   if (remainingTarget <= 0) {
     return { orders: [], message: "已達成 100 股計畫，今日不需要再加碼。" };
   }
 
-  const budget = Math.max(0, maxDailyInvestment);
+  const budget = Math.max(0, remainingAmount);
   if (budget <= 0) {
-    return { orders: [], message: "今日可用投入金額為 0，先不要掛單。" };
+    return { orders: [], message: "本月剩餘金額已用完，先不要再掛單。" };
   }
 
   const candidates = getOrderCandidates(currentPrice);
@@ -282,7 +332,7 @@ function buildOrders() {
 
   return {
     orders,
-    message: "今日掛單已依目前價格、跌幅規則、今日預算與剩餘目標股數產生。",
+    message: `今日掛單已依目前價格、跌幅規則、本月剩餘金額 ${formatYen(budget)} 與剩餘目標股數產生。`,
   };
 }
 
@@ -308,6 +358,7 @@ function renderOverview() {
 
 function renderCost() {
   const { totalShares, totalInvested, averageCost } = getPortfolio();
+  const { budgetAmount, remainingAmount } = getMonthlyBudgetSummary();
   const currentPrice = parseNumber(elements.currentPrice.value);
   const marketValue = currentPrice && totalShares ? currentPrice * totalShares : null;
   const pnl = marketValue !== null ? marketValue - totalInvested : null;
@@ -315,6 +366,8 @@ function renderCost() {
 
   elements.totalInvestedText.textContent = formatYen(totalInvested);
   elements.averageCostText.textContent = totalShares ? formatYen(averageCost) : "-";
+  elements.costMonthlyRemainingText.textContent = budgetAmount > 0 ? formatYen(remainingAmount) : "尚未登錄";
+  elements.costMonthlyRemainingText.className = remainingAmount < 0 ? "loss" : budgetAmount > 0 ? "gain" : "";
   elements.currentPriceText.textContent = currentPrice ? formatYen(currentPrice) : "-";
   elements.unrealizedPnlText.textContent = pnl !== null ? formatYen(pnl) : "-";
   elements.pnlPercentText.textContent = pnlPercent !== null ? formatPercent(pnlPercent) : "-";
@@ -354,7 +407,7 @@ function renderEvaluation() {
     elements.todayRating.textContent = "🟢 可小買";
     elements.warningBox.className = "warning-box ok";
     elements.warningTitle.textContent = "✅ 價格已進入合理加碼區";
-    elements.warningText.textContent = "可依照計畫掛單，但仍不要超過今日預算與最大股數。";
+    elements.warningText.textContent = "可依照計畫掛單，但仍不要超過本月剩餘金額與最大股數。";
   } else {
     elements.todayRating.textContent = "🟡 觀望";
     elements.warningBox.className = "warning-box neutral";
@@ -421,9 +474,41 @@ function renderTrades() {
     .join("");
 }
 
+function renderBudgets() {
+  const { monthKey, budgetAmount, spentAmount, remainingAmount } = getMonthlyBudgetSummary();
+  elements.budgetMonthText.textContent = `本月剩餘金額（${formatMonthLabel(monthKey)}）`;
+  elements.monthlyRemainingText.textContent = budgetAmount > 0 ? formatYen(remainingAmount) : "尚未登錄";
+  elements.monthlyRemainingText.className = remainingAmount < 0 ? "loss" : budgetAmount > 0 ? "gain" : "";
+  elements.monthlyBudgetDetail.textContent =
+    budgetAmount > 0
+      ? `本月預算 ${formatYen(budgetAmount)}，已買進 ${formatYen(spentAmount)}。`
+      : "登錄當月預算後，會自動扣除本月交易金額。";
+
+  const budgets = sortedBudgets();
+  if (!budgets.length) {
+    elements.budgetsBody.innerHTML = '<tr><td colspan="4" class="empty-state">尚無月度預算。</td></tr>';
+    return;
+  }
+
+  elements.budgetsBody.innerHTML = budgets
+    .map(
+      (budget) => `
+        <tr>
+          <td>${formatMonthLabel(budget.month)}</td>
+          <td>${formatYen(budget.amount)}</td>
+          <td>${budget.note || "-"}</td>
+          <td class="action-cell">
+            <button class="text-button" type="button" data-edit-budget="${budget.id}">編輯</button>
+            <button class="text-button danger" type="button" data-delete-budget="${budget.id}">刪除</button>
+          </td>
+        </tr>
+      `
+    )
+    .join("");
+}
+
 function render() {
   state.currentPrice = elements.currentPrice.value;
-  state.maxDailyInvestment = elements.maxDailyInvestment.value;
   state.targetShares = defaults.targetShares;
   state.rules.smallDropPercent = Number(elements.smallDropPercent.value) || 0;
   state.rules.smallMaxShares = Number(elements.smallMaxShares.value) || 0;
@@ -436,8 +521,62 @@ function render() {
   renderCost();
   renderEvaluation();
   renderOrders();
+  renderBudgets();
   renderTrades();
   saveState();
+}
+
+function resetBudgetForm() {
+  elements.budgetId.value = "";
+  elements.budgetMonth.value = getCurrentMonthKey();
+  elements.budgetAmount.value = "";
+  elements.budgetNote.value = "";
+  elements.saveBudgetButton.textContent = "登錄預算";
+  elements.cancelBudgetEditButton.hidden = true;
+}
+
+function saveBudget(event) {
+  event.preventDefault();
+  const month = elements.budgetMonth.value;
+  const amount = parseNumber(elements.budgetAmount.value);
+  const note = elements.budgetNote.value.trim();
+
+  if (!month || amount === null || amount < 0) return;
+
+  const budget = {
+    id: elements.budgetId.value || createBudgetId(),
+    month,
+    amount,
+    note,
+  };
+
+  const existingIndex = state.budgets.findIndex((item) => item.id === budget.id);
+  if (existingIndex >= 0) {
+    state.budgets[existingIndex] = budget;
+  } else {
+    state.budgets.push(budget);
+  }
+
+  resetBudgetForm();
+  render();
+}
+
+function editBudget(id) {
+  const budget = state.budgets.find((item) => item.id === id);
+  if (!budget) return;
+  elements.budgetId.value = budget.id;
+  elements.budgetMonth.value = budget.month;
+  elements.budgetAmount.value = budget.amount;
+  elements.budgetNote.value = budget.note || "";
+  elements.saveBudgetButton.textContent = "儲存預算";
+  elements.cancelBudgetEditButton.hidden = false;
+  elements.budgetMonth.focus();
+}
+
+function deleteBudget(id) {
+  state.budgets = state.budgets.filter((budget) => budget.id !== id);
+  resetBudgetForm();
+  render();
 }
 
 function resetTradeForm() {
@@ -534,13 +673,13 @@ function generateNow() {
 
 function initializeInputs() {
   elements.currentPrice.value = state.currentPrice;
-  elements.maxDailyInvestment.value = state.maxDailyInvestment;
   elements.smallDropPercent.value = state.rules.smallDropPercent;
   elements.smallMaxShares.value = state.rules.smallMaxShares;
   elements.mediumDropPercent.value = state.rules.mediumDropPercent;
   elements.mediumMaxShares.value = state.rules.mediumMaxShares;
   elements.largeDropPercent.value = state.rules.largeDropPercent;
   elements.largeMaxShares.value = state.rules.largeMaxShares;
+  resetBudgetForm();
   setRulesCollapsed(Boolean(state.rulesCollapsed));
   setActivePeriod(state.chartPeriod || defaults.chartPeriod);
   setChartCollapsed(Boolean(state.chartCollapsed));
@@ -793,7 +932,7 @@ function renderChart(data) {
   });
 }
 
-["currentPrice", "maxDailyInvestment", "smallDropPercent", "smallMaxShares", "mediumDropPercent", "mediumMaxShares", "largeDropPercent", "largeMaxShares"].forEach(
+["currentPrice", "smallDropPercent", "smallMaxShares", "mediumDropPercent", "mediumMaxShares", "largeDropPercent", "largeMaxShares"].forEach(
   (id) => elements[id].addEventListener("input", render)
 );
 
@@ -805,6 +944,15 @@ elements.periodButtons.forEach((button) => {
 });
 elements.importChartCsvButton.addEventListener("click", importChartCsv);
 elements.clearChartDataButton.addEventListener("click", clearChartData);
+
+elements.budgetForm.addEventListener("submit", saveBudget);
+elements.cancelBudgetEditButton.addEventListener("click", resetBudgetForm);
+elements.budgetsBody.addEventListener("click", (event) => {
+  const editId = event.target.dataset.editBudget;
+  const deleteId = event.target.dataset.deleteBudget;
+  if (editId) editBudget(editId);
+  if (deleteId) deleteBudget(deleteId);
+});
 
 elements.tradeForm.addEventListener("submit", saveTrade);
 elements.cancelEditButton.addEventListener("click", resetTradeForm);

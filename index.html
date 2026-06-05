@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>伊藤忠100股計畫助手</title>
-    <link rel="stylesheet" href="styles.css?v=20260604-6">
+    <link rel="stylesheet" href="styles.css?v=20260605-2">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.9/dist/chart.umd.min.js" defer></script>
   </head>
   <body>
@@ -82,10 +82,10 @@
               <span>目前價格</span>
               <input id="currentPrice" type="number" inputmode="decimal" min="0" step="0.5" placeholder="例：1851">
             </label>
-            <label class="field">
-              <span>今日最多投入金額</span>
-              <input id="maxDailyInvestment" type="number" inputmode="decimal" min="0" step="1" placeholder="例：150000">
-            </label>
+            <div class="budget-inline">
+              <span>本月剩餘金額</span>
+              <strong id="costMonthlyRemainingText">-</strong>
+            </div>
           </div>
 
           <button class="primary-button generate-button" type="button" id="generateButton">產生建議</button>
@@ -277,7 +277,7 @@
           <p id="warningText">工具會依照平均成本與最近成交均價提醒你不要衝動追價。</p>
         </div>
 
-        <p class="summary-text" id="orderSummary">輸入目前價格與今日最多投入金額後，會產生掛單建議。</p>
+        <p class="summary-text" id="orderSummary">輸入目前價格後，會依本月剩餘金額產生掛單建議。</p>
 
         <div class="table-wrap">
           <table>
@@ -303,6 +303,46 @@
           </div>
           <button class="ghost-button" type="button" id="clearTradesButton">清空紀錄</button>
         </div>
+
+        <section class="monthly-budget-box">
+          <div class="budget-highlight">
+            <span id="budgetMonthText">本月預算</span>
+            <strong id="monthlyRemainingText">-</strong>
+            <small id="monthlyBudgetDetail">登錄當月預算後，會自動扣除本月交易金額。</small>
+          </div>
+
+          <form class="budget-form" id="budgetForm">
+            <input id="budgetId" type="hidden">
+            <label class="field">
+              <span>月份</span>
+              <input id="budgetMonth" type="month" required>
+            </label>
+            <label class="field">
+              <span>當月預算</span>
+              <input id="budgetAmount" type="number" inputmode="decimal" min="0" step="1" placeholder="例：50000" required>
+            </label>
+            <label class="field">
+              <span>備註</span>
+              <input id="budgetNote" type="text" placeholder="例：六月投入上限">
+            </label>
+            <button class="primary-button" type="submit" id="saveBudgetButton">登錄預算</button>
+            <button class="ghost-button" type="button" id="cancelBudgetEditButton" hidden>取消編輯</button>
+          </form>
+
+          <div class="table-wrap compact-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>月份</th>
+                  <th>預算金額</th>
+                  <th>備註</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody id="budgetsBody"></tbody>
+            </table>
+          </div>
+        </section>
 
         <form class="trade-form" id="tradeForm">
           <input id="tradeId" type="hidden">
@@ -368,6 +408,6 @@
       </section>
     </main>
 
-    <script src="script.js?v=20260604-6"></script>
+    <script src="script.js?v=20260605-2"></script>
   </body>
 </html>
