@@ -1,4 +1,4 @@
-const storageKey = "itochu-100-plan-state-v5";
+const storageKey = "itochu-100-plan-state-v8";
 
 const defaults = {
   stockName: "伊藤忠",
@@ -6,8 +6,9 @@ const defaults = {
   targetShares: 100,
   currentPrice: "1837",
   rulesCollapsed: false,
+  budgetCollapsed: true,
   collapseSettingsVersion: 1,
-  seedDataVersion: 1,
+  seedDataVersion: 4,
   seedTradesInitialized: true,
   annualDividendPerShare: 200,
   budgets: [{ id: "seed-budget-2026-06", month: "2026-06", amount: 15000, note: "六月預算" }],
@@ -29,6 +30,8 @@ const defaults = {
 };
 
 const state = loadState();
+repairInitialData();
+let budgetAnimationTimer = null;
 
 const elements = {
   stockCodeText: document.getElementById("stockCodeText"),
@@ -90,6 +93,9 @@ const elements = {
   budgetMonthText: document.getElementById("budgetMonthText"),
   monthlyRemainingText: document.getElementById("monthlyRemainingText"),
   monthlyBudgetDetail: document.getElementById("monthlyBudgetDetail"),
+  toggleBudgetButton: document.getElementById("toggleBudgetButton"),
+  monthlyBudgetBox: document.querySelector(".monthly-budget-box"),
+  budgetContent: document.getElementById("budgetContent"),
   budgetForm: document.getElementById("budgetForm"),
   budgetId: document.getElementById("budgetId"),
   budgetMonth: document.getElementById("budgetMonth"),
@@ -117,12 +123,20 @@ function loadState() {
     if (!saved) return clone(defaults);
     const savedBudgets = Array.isArray(saved.budgets) ? saved.budgets : [];
     const savedTrades = Array.isArray(saved.trades) ? saved.trades : [];
-    const shouldHydrateSeedData = saved.seedDataVersion !== defaults.seedDataVersion;
+    const defaultShares = defaults.trades.reduce((sum, trade) => sum + trade.shares, 0);
+    const savedShares = savedTrades.reduce((sum, trade) => sum + (Number(trade?.shares) || 0), 0);
+    const seedBudget = defaults.budgets[0];
+    const hasSeedBudget = savedBudgets.some(
+      (budget) => budget?.month === seedBudget.month && Number(budget?.amount) === seedBudget.amount
+    );
+    const shouldHydrateSeedData =
+      saved.seedDataVersion !== defaults.seedDataVersion || savedShares < defaultShares || !hasSeedBudget;
 
     return {
       ...clone(defaults),
       ...saved,
       rulesCollapsed: saved.collapseSettingsVersion === defaults.collapseSettingsVersion ? Boolean(saved.rulesCollapsed) : true,
+      budgetCollapsed: "budgetCollapsed" in saved ? Boolean(saved.budgetCollapsed) : defaults.budgetCollapsed,
       collapseSettingsVersion: defaults.collapseSettingsVersion,
       seedDataVersion: defaults.seedDataVersion,
       annualDividendPerShare: Number.isFinite(Number(saved.annualDividendPerShare))
@@ -625,6 +639,25 @@ function render() {
   saveState();
 }
 
+function repairInitialData() {
+  const defaultShares = defaults.trades.reduce((sum, trade) => sum + trade.shares, 0);
+  const currentShares = state.trades.reduce((sum, trade) => sum + (Number(trade?.shares) || 0), 0);
+  const seedBudget = defaults.budgets[0];
+  const hasSeedBudget = state.budgets.some(
+    (budget) => budget?.month === seedBudget.month && Number(budget?.amount) === seedBudget.amount
+  );
+
+  if (currentShares < defaultShares) {
+    state.trades = seedInitialTrades(Array.isArray(state.trades) ? state.trades : []);
+  }
+
+  if (!hasSeedBudget) {
+    state.budgets = seedInitialBudgets(Array.isArray(state.budgets) ? state.budgets : []);
+  }
+
+  state.seedDataVersion = defaults.seedDataVersion;
+}
+
 function resetBudgetForm() {
   elements.budgetId.value = "";
   elements.budgetMonth.value = getCurrentMonthKey();
@@ -663,6 +696,7 @@ function saveBudget(event) {
 function editBudget(id) {
   const budget = state.budgets.find((item) => item.id === id);
   if (!budget) return;
+  setBudgetCollapsed(false);
   elements.budgetId.value = budget.id;
   elements.budgetMonth.value = budget.month;
   elements.budgetAmount.value = budget.amount;
@@ -753,6 +787,7 @@ function initializeInputs() {
   elements.annualDividendPerShare.value = state.annualDividendPerShare;
   resetBudgetForm();
   setRulesCollapsed(Boolean(state.rulesCollapsed));
+  setBudgetCollapsed(Boolean(state.budgetCollapsed), false);
   resetTradeForm();
 }
 
@@ -762,6 +797,38 @@ function setRulesCollapsed(isCollapsed) {
   elements.rulesContent.hidden = isCollapsed;
   elements.toggleRulesButton.textContent = isCollapsed ? "打開個人規則" : "收起個人規則";
   elements.toggleRulesButton.setAttribute("aria-expanded", String(!isCollapsed));
+  saveState();
+}
+
+function setBudgetCollapsed(isCollapsed, animate = true) {
+  state.budgetCollapsed = isCollapsed;
+  clearTimeout(budgetAnimationTimer);
+  elements.monthlyBudgetBox.classList.toggle("is-collapsed", isCollapsed);
+  elements.toggleBudgetButton.classList.toggle("is-open", !isCollapsed);
+  elements.toggleBudgetButton.querySelector("span").textContent = isCollapsed ? "拉開月預算設定" : "收起月預算設定";
+  elements.toggleBudgetButton.setAttribute("aria-expanded", String(!isCollapsed));
+
+  if (!animate) {
+    elements.budgetContent.hidden = isCollapsed;
+    elements.budgetContent.classList.toggle("is-budget-hiding", isCollapsed);
+    saveState();
+    return;
+  }
+
+  if (isCollapsed) {
+    elements.budgetContent.classList.add("is-budget-hiding");
+    budgetAnimationTimer = window.setTimeout(() => {
+      elements.budgetContent.hidden = true;
+      elements.budgetContent.classList.remove("is-budget-hiding");
+    }, 220);
+  } else {
+    elements.budgetContent.hidden = false;
+    elements.budgetContent.classList.add("is-budget-hiding");
+    requestAnimationFrame(() => {
+      elements.budgetContent.classList.remove("is-budget-hiding");
+    });
+  }
+
   saveState();
 }
 
@@ -780,6 +847,7 @@ function setRulesCollapsed(isCollapsed) {
 
 elements.generateButton.addEventListener("click", generateNow);
 elements.toggleRulesButton.addEventListener("click", () => setRulesCollapsed(!state.rulesCollapsed));
+elements.toggleBudgetButton.addEventListener("click", () => setBudgetCollapsed(!state.budgetCollapsed));
 
 elements.budgetForm.addEventListener("submit", saveBudget);
 elements.cancelBudgetEditButton.addEventListener("click", resetBudgetForm);

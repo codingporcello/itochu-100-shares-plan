@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>伊藤忠100股冒險計畫</title>
-    <link rel="stylesheet" href="styles.css?v=20260609-ui-polish-2">
+    <link rel="stylesheet" href="styles.css?v=20260609-final-ui-tune-3">
   </head>
   <body>
     <main class="app-shell">
@@ -24,24 +24,7 @@
           <p class="subtitle">每天一點點，慢慢累積自己的小寶箱。</p>
         </div>
         <div class="hero-character" aria-hidden="true">
-          <div class="pixel-adventurer">
-            <span class="pixel-cape"></span>
-            <span class="pixel-hat"></span>
-            <span class="pixel-face"></span>
-            <span class="pixel-bangs"></span>
-            <span class="pixel-eye left"></span>
-            <span class="pixel-eye right"></span>
-            <span class="pixel-cheek left"></span>
-            <span class="pixel-cheek right"></span>
-            <span class="pixel-scarf"></span>
-            <span class="pixel-tunic"></span>
-            <span class="pixel-glove left"></span>
-            <span class="pixel-glove right"></span>
-            <span class="pixel-boot left"></span>
-            <span class="pixel-boot right"></span>
-            <span class="pixel-sword"></span>
-            <span class="pixel-shield"></span>
-          </div>
+          <img class="adventurer-art" src="assets/itochu-adventurer.png" alt="">
           <div class="daily-quest">
             <strong>📜 今日任務</strong>
             <span>✓ 查看今日股價</span>
@@ -57,6 +40,7 @@
           <span class="hero-pet" aria-hidden="true"></span>
           <img src="assets/itochu-cute-mascot.png" alt="">
           <div class="stock-badge character-card">
+            <div class="character-panel-title">子綱的伊藤忠角色存檔</div>
             <div class="character-card-head">
               <span>冒險者：<b>子綱</b></span>
               <strong>LV.<span id="heroLevelText">0</span></strong>
@@ -369,43 +353,51 @@
         </div>
 
         <section class="monthly-budget-box">
-          <div class="budget-highlight">
-            <span id="budgetMonthText">本月預算</span>
-            <strong id="monthlyRemainingText">-</strong>
-            <small id="monthlyBudgetDetail">登錄當月預算後，會自動扣除本月交易金額。</small>
+          <div class="budget-content" id="budgetContent">
+            <div class="budget-highlight-row">
+              <div class="budget-highlight">
+                <span id="budgetMonthText">本月預算</span>
+                <strong id="monthlyRemainingText">-</strong>
+                <small id="monthlyBudgetDetail">登錄當月預算後，會自動扣除本月交易金額。</small>
+              </div>
+            </div>
+
+            <form class="budget-form" id="budgetForm">
+              <input id="budgetId" type="hidden">
+              <label class="field">
+                <span>月份</span>
+                <input id="budgetMonth" type="month" required>
+              </label>
+              <label class="field">
+                <span>當月預算</span>
+                <input id="budgetAmount" type="number" inputmode="decimal" min="0" step="1" placeholder="例：50000" required>
+              </label>
+              <label class="field">
+                <span>備註</span>
+                <input id="budgetNote" type="text" placeholder="例：六月投入上限">
+              </label>
+              <button class="primary-button" type="submit" id="saveBudgetButton">登錄預算</button>
+              <button class="ghost-button" type="button" id="cancelBudgetEditButton" hidden>取消編輯</button>
+            </form>
+
+            <div class="table-wrap compact-table">
+              <table>
+                <thead>
+                  <tr>
+                    <th>月份</th>
+                    <th>預算金額</th>
+                    <th>備註</th>
+                    <th>操作</th>
+                  </tr>
+                </thead>
+                <tbody id="budgetsBody"></tbody>
+              </table>
+            </div>
           </div>
 
-          <form class="budget-form" id="budgetForm">
-            <input id="budgetId" type="hidden">
-            <label class="field">
-              <span>月份</span>
-              <input id="budgetMonth" type="month" required>
-            </label>
-            <label class="field">
-              <span>當月預算</span>
-              <input id="budgetAmount" type="number" inputmode="decimal" min="0" step="1" placeholder="例：50000" required>
-            </label>
-            <label class="field">
-              <span>備註</span>
-              <input id="budgetNote" type="text" placeholder="例：六月投入上限">
-            </label>
-            <button class="primary-button" type="submit" id="saveBudgetButton">登錄預算</button>
-            <button class="ghost-button" type="button" id="cancelBudgetEditButton" hidden>取消編輯</button>
-          </form>
-
-          <div class="table-wrap compact-table">
-            <table>
-              <thead>
-                <tr>
-                  <th>月份</th>
-                  <th>預算金額</th>
-                  <th>備註</th>
-                  <th>操作</th>
-                </tr>
-              </thead>
-              <tbody id="budgetsBody"></tbody>
-            </table>
-          </div>
+          <button class="zip-toggle budget-zip-control" type="button" id="toggleBudgetButton" aria-expanded="false" aria-controls="budgetContent">
+            <span>拉開月預算設定</span>
+          </button>
         </section>
 
         <form class="trade-form" id="tradeForm">
@@ -448,6 +440,6 @@
 
     </main>
 
-    <script src="script.js?v=20260609-ui-polish-2" type="module"></script>
+    <script src="script.js?v=20260609-final-ui-tune-3" type="module"></script>
   </body>
 </html>
