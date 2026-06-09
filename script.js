@@ -1,18 +1,16 @@
-const storageKey = "itochu-100-plan-state-v3";
+const storageKey = "itochu-100-plan-state-v5";
 
 const defaults = {
   stockName: "伊藤忠",
   stockCode: "8001",
   targetShares: 100,
-  currentPrice: "",
-  chartPeriod: "1m",
-  chartCollapsed: true,
-  rulesCollapsed: true,
+  currentPrice: "1837",
+  rulesCollapsed: false,
   collapseSettingsVersion: 1,
+  seedDataVersion: 1,
   seedTradesInitialized: true,
-  chartData: [],
-  chartImportedAt: "",
-  budgets: [],
+  annualDividendPerShare: 200,
+  budgets: [{ id: "seed-budget-2026-06", month: "2026-06", amount: 15000, note: "六月預算" }],
   rules: {
     smallDropPercent: 0.3,
     smallMaxShares: 1,
@@ -25,6 +23,8 @@ const defaults = {
     { id: "seed-2026-05-26", date: "2026-05-26", price: 1920, shares: 10, note: "初始建倉" },
     { id: "seed-2026-05-27", date: "2026-05-27", price: 1918, shares: 10, note: "加碼" },
     { id: "seed-2026-06-04", date: "2026-06-04", price: 1850, shares: 1, note: "NISA" },
+    { id: "seed-2026-06-08-a", date: "2026-06-08", price: 1850, shares: 1, note: "NISA" },
+    { id: "seed-2026-06-08-b", date: "2026-06-08", price: 1835, shares: 1, note: "NISA" },
   ],
 };
 
@@ -33,6 +33,14 @@ const state = loadState();
 const elements = {
   stockCodeText: document.getElementById("stockCodeText"),
   stockNameText: document.getElementById("stockNameText"),
+  heroLevelText: document.getElementById("heroLevelText"),
+  heroExpText: document.getElementById("heroExpText"),
+  heroExpBar: document.getElementById("heroExpBar"),
+  heroTitleText: document.getElementById("heroTitleText"),
+  heroCurrentSharesText: document.getElementById("heroCurrentSharesText"),
+  heroNextMilestoneText: document.getElementById("heroNextMilestoneText"),
+  heroRemainingSharesText: document.getElementById("heroRemainingSharesText"),
+  heroCompletionText: document.getElementById("heroCompletionText"),
   overviewName: document.getElementById("overviewName"),
   overviewCode: document.getElementById("overviewCode"),
   progressPill: document.getElementById("progressPill"),
@@ -56,6 +64,7 @@ const elements = {
   ordersBody: document.getElementById("ordersBody"),
   todayRating: document.getElementById("todayRating"),
   todayReason: document.getElementById("todayReason"),
+  npcNameText: document.getElementById("npcNameText"),
   warningBox: document.getElementById("warningBox"),
   warningTitle: document.getElementById("warningTitle"),
   warningText: document.getElementById("warningText"),
@@ -68,22 +77,16 @@ const elements = {
   largeMaxShares: document.getElementById("largeMaxShares"),
   toggleRulesButton: document.getElementById("toggleRulesButton"),
   rulesContent: document.getElementById("rulesContent"),
-  periodButtons: document.querySelectorAll(".period-button"),
-  toggleChartButton: document.getElementById("toggleChartButton"),
-  chartContent: document.getElementById("chartContent"),
-  chartSourceText: document.getElementById("chartSourceText"),
-  chartUpdatedText: document.getElementById("chartUpdatedText"),
-  chartCanvas: document.getElementById("priceChart"),
-  chartEmpty: document.getElementById("chartEmpty"),
-  debugSource: document.getElementById("debugSource"),
-  debugApiUrl: document.getElementById("debugApiUrl"),
-  debugStatusCode: document.getElementById("debugStatusCode"),
-  debugErrorMessage: document.getElementById("debugErrorMessage"),
-  debugFallback: document.getElementById("debugFallback"),
-  chartCsvInput: document.getElementById("chartCsvInput"),
-  importChartCsvButton: document.getElementById("importChartCsvButton"),
-  clearChartDataButton: document.getElementById("clearChartDataButton"),
-  chartImportStatus: document.getElementById("chartImportStatus"),
+  milestoneCards: document.querySelectorAll(".milestone-card"),
+  milestone25Text: document.getElementById("milestone25Text"),
+  milestone50Text: document.getElementById("milestone50Text"),
+  milestone75Text: document.getElementById("milestone75Text"),
+  milestone100Text: document.getElementById("milestone100Text"),
+  annualDividendPerShare: document.getElementById("annualDividendPerShare"),
+  targetGoalSharesText: document.getElementById("targetGoalSharesText"),
+  targetTotalInvestedText: document.getElementById("targetTotalInvestedText"),
+  targetAnnualDividendText: document.getElementById("targetAnnualDividendText"),
+  targetCompletionText: document.getElementById("targetCompletionText"),
   budgetMonthText: document.getElementById("budgetMonthText"),
   monthlyRemainingText: document.getElementById("monthlyRemainingText"),
   monthlyBudgetDetail: document.getElementById("monthlyBudgetDetail"),
@@ -105,31 +108,30 @@ const elements = {
   cancelEditButton: document.getElementById("cancelEditButton"),
   clearTradesButton: document.getElementById("clearTradesButton"),
   tradesBody: document.getElementById("tradesBody"),
-  csvInput: document.getElementById("csvInput"),
-  importCsvButton: document.getElementById("importCsvButton"),
-  csvStatus: document.getElementById("csvStatus"),
+  navLinks: document.querySelectorAll(".game-nav a"),
 };
-
-let priceChart = null;
 
 function loadState() {
   try {
     const saved = JSON.parse(localStorage.getItem(storageKey));
     if (!saved) return clone(defaults);
+    const savedBudgets = Array.isArray(saved.budgets) ? saved.budgets : [];
+    const savedTrades = Array.isArray(saved.trades) ? saved.trades : [];
+    const shouldHydrateSeedData = saved.seedDataVersion !== defaults.seedDataVersion;
+
     return {
       ...clone(defaults),
       ...saved,
-      chartCollapsed: saved.collapseSettingsVersion === defaults.collapseSettingsVersion ? Boolean(saved.chartCollapsed) : true,
       rulesCollapsed: saved.collapseSettingsVersion === defaults.collapseSettingsVersion ? Boolean(saved.rulesCollapsed) : true,
       collapseSettingsVersion: defaults.collapseSettingsVersion,
+      seedDataVersion: defaults.seedDataVersion,
+      annualDividendPerShare: Number.isFinite(Number(saved.annualDividendPerShare))
+        ? Number(saved.annualDividendPerShare)
+        : defaults.annualDividendPerShare,
       rules: normalizeRules(saved.rules),
-      budgets: Array.isArray(saved.budgets) ? saved.budgets : [],
+      budgets: shouldHydrateSeedData ? seedInitialBudgets(savedBudgets) : savedBudgets,
       seedTradesInitialized: true,
-      trades: saved.seedTradesInitialized
-        ? Array.isArray(saved.trades)
-          ? saved.trades
-          : []
-        : seedInitialTrades(Array.isArray(saved.trades) ? saved.trades : []),
+      trades: shouldHydrateSeedData ? seedInitialTrades(savedTrades) : savedTrades,
     };
   } catch {
     return clone(defaults);
@@ -159,11 +161,33 @@ function normalizeRules(savedRules = {}) {
 }
 
 function seedInitialTrades(trades) {
-  const byId = new Map(trades.map((trade) => [trade.id, trade]));
+  const byId = new Map(trades.filter((trade) => trade && trade.id).map((trade) => [trade.id, trade]));
+  const existingSignatures = new Set(trades.map(getTradeSignature));
   defaults.trades.forEach((trade) => {
-    if (!byId.has(trade.id)) byId.set(trade.id, clone(trade));
+    if (!byId.has(trade.id) && !existingSignatures.has(getTradeSignature(trade))) {
+      byId.set(trade.id, clone(trade));
+    }
   });
   return [...byId.values()];
+}
+
+function seedInitialBudgets(budgets) {
+  const byId = new Map(budgets.filter((budget) => budget && budget.id).map((budget) => [budget.id, budget]));
+  const existingSignatures = new Set(budgets.map(getBudgetSignature));
+  defaults.budgets.forEach((budget) => {
+    if (!byId.has(budget.id) && !existingSignatures.has(getBudgetSignature(budget))) {
+      byId.set(budget.id, clone(budget));
+    }
+  });
+  return [...byId.values()];
+}
+
+function getTradeSignature(trade) {
+  return [trade?.date, Number(trade?.price), Number(trade?.shares), trade?.note || ""].join("|");
+}
+
+function getBudgetSignature(budget) {
+  return [budget?.month, Number(budget?.amount), budget?.note || ""].join("|");
 }
 
 function saveState() {
@@ -174,16 +198,6 @@ function parseNumber(value) {
   if (String(value).trim() === "") return null;
   const number = Number(value);
   return Number.isFinite(number) ? number : null;
-}
-
-function formatDateTime(date = new Date()) {
-  return new Intl.DateTimeFormat("zh-Hant", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(date);
 }
 
 function formatYen(value) {
@@ -347,13 +361,55 @@ function renderOverview() {
   elements.overviewName.textContent = state.stockName;
   elements.overviewCode.textContent = state.stockCode;
   elements.progressPill.textContent = `第 ${formatNumber(totalShares, 0)} 股`;
+  elements.heroLevelText.textContent = getHeroLevel(totalShares);
+  elements.heroExpText.textContent = `${formatNumber(totalShares, 0)} / ${formatNumber(state.targetShares, 0)}`;
+  elements.heroExpBar.style.width = `${completion}%`;
+  elements.heroTitleText.textContent = getHeroTitle(totalShares);
+  elements.heroCurrentSharesText.textContent = `${formatNumber(totalShares, 0)}股`;
+  elements.heroNextMilestoneText.textContent = `${formatNumber(getNextMilestone(totalShares), 0)}股`;
+  elements.heroRemainingSharesText.textContent = `${formatNumber(getNextMilestoneRemaining(totalShares), 0)}股`;
+  elements.heroCompletionText.textContent = formatPercent(completion);
   elements.mainProgressText.textContent = `${formatNumber(totalShares, 0)} / ${formatNumber(state.targetShares, 0)} 股`;
-  elements.remainingText.textContent = `剩餘 ${formatNumber(remaining, 0)} 股`;
+  elements.remainingText.textContent = `距離 LV.MAX 還差 ${formatNumber(remaining, 0)} 股`;
   elements.progressBar.style.width = `${completion}%`;
   elements.currentSharesText.textContent = `${formatNumber(totalShares, 0)} 股`;
   elements.targetSharesText.textContent = `${formatNumber(state.targetShares, 0)} 股`;
   elements.completionText.textContent = formatPercent(completion);
   elements.remainingMetricText.textContent = `${formatNumber(remaining, 0)} 股`;
+}
+
+function renderMilestones() {
+  const { totalShares } = getPortfolio();
+  const milestones = [25, 50, 75, 100];
+
+  milestones.forEach((milestone) => {
+    const remaining = Math.max(milestone - totalShares, 0);
+    const card = [...elements.milestoneCards].find((item) => Number(item.dataset.milestone) === milestone);
+    const text = elements[`milestone${milestone}Text`];
+
+    if (!card || !text) return;
+
+    const progress = Math.min((totalShares / milestone) * 100, 100);
+    card.style.setProperty("--milestone-progress", `${progress}%`);
+    card.style.setProperty("--milestone-ratio", String(progress / 100));
+    card.classList.toggle("is-complete", remaining === 0);
+    text.textContent = remaining === 0 ? "解鎖済" : `あと${formatNumber(remaining, 0)}股解鎖`;
+  });
+}
+
+function renderTargetPreview() {
+  const { totalShares, averageCost } = getPortfolio();
+  const targetShares = defaults.targetShares;
+  const dividendPerShare = parseNumber(elements.annualDividendPerShare.value);
+  const safeDividend = dividendPerShare !== null && dividendPerShare >= 0 ? dividendPerShare : defaults.annualDividendPerShare;
+  const completion = Math.min((totalShares / targetShares) * 100, 100);
+  const displayedAverageCost = Math.round(averageCost * 10) / 10;
+
+  state.annualDividendPerShare = safeDividend;
+  elements.targetGoalSharesText.textContent = `${formatNumber(targetShares, 0)}股`;
+  elements.targetTotalInvestedText.textContent = averageCost > 0 ? formatYen(displayedAverageCost * targetShares) : "資料不足";
+  elements.targetAnnualDividendText.textContent = formatYen(safeDividend * targetShares);
+  elements.targetCompletionText.textContent = `${formatNumber(completion, 0)}%`;
 }
 
 function renderCost() {
@@ -382,8 +438,9 @@ function renderEvaluation() {
   const remaining = Math.max(state.targetShares - totalShares, 0);
 
   if (!currentPrice) {
-    elements.todayRating.textContent = "等待價格";
-    elements.todayReason.textContent = "輸入目前價格後，會顯示今日是否適合加碼。";
+    elements.npcNameText.textContent = "村長";
+    elements.todayRating.textContent = "先看看今日價格吧。";
+    elements.todayReason.textContent = "輸入目前價格後，我會幫你確認今天的冒險任務。距離下一個里程碑只差幾股，也會一起告訴你。";
     elements.warningBox.className = "warning-box neutral";
     elements.warningTitle.textContent = "今日追價警告";
     elements.warningText.textContent = "工具會依照平均成本與最近成交均價提醒你不要衝動追價。";
@@ -399,28 +456,67 @@ function renderEvaluation() {
   const isNearLarge = largeDistance / currentPrice <= 0.035;
 
   if (isAboveAverageCost || isAboveRecentCost) {
-    elements.todayRating.textContent = "🔴 不建議追價";
+    elements.npcNameText.textContent = "村長";
+    elements.todayRating.textContent = "今天先別急著出發。";
     elements.warningBox.className = "warning-box danger";
     elements.warningTitle.textContent = "⚠️ 今日追價警告";
     elements.warningText.textContent = `目前價格高於${isAboveAverageCost ? "平均成本" : "最近成交均價"}，不建議追價，建議等待回檔。`;
   } else if (isNearLarge || isNearMedium) {
-    elements.todayRating.textContent = "🟢 可小買";
+    elements.npcNameText.textContent = isNearLarge ? "冒險家" : "菇菇商人";
+    elements.todayRating.textContent = "今天價格不錯喔！";
     elements.warningBox.className = "warning-box ok";
     elements.warningTitle.textContent = "✅ 價格已進入合理加碼區";
     elements.warningText.textContent = "可依照計畫掛單，但仍不要超過本月剩餘金額與最大股數。";
   } else {
-    elements.todayRating.textContent = "🟡 觀望";
+    elements.npcNameText.textContent = "肥肥商人";
+    elements.todayRating.textContent = "先在村口觀察一下。";
     elements.warningBox.className = "warning-box neutral";
     elements.warningTitle.textContent = "今日追價警告";
     elements.warningText.textContent = "尚未明顯進入加碼區，先掛低一點，讓價格來找你。";
   }
 
+  const firstOrder = buildOrders().orders.find((order) => order.shares > 0);
   elements.todayReason.textContent = [
+    `距離下一個里程碑只差 ${formatNumber(getNextMilestoneRemaining(totalShares), 0)} 股`,
+    firstOrder ? `建議買入 ${formatNumber(firstOrder.shares, 0)} 股` : "今天先保留金庫資金",
     averageCost ? `目前價格與平均成本差距：${formatYen(currentPrice - averageCost)}` : "尚無平均成本資料",
     `距離中買區：${formatYen(mediumDistance)}`,
     `距離大跌區：${formatYen(largeDistance)}`,
     `距離 100 股目標還剩 ${formatNumber(remaining, 0)} 股`,
   ].join("。");
+}
+
+function updateActiveNav() {
+  const sections = [...elements.navLinks]
+    .map((link) => document.querySelector(link.getAttribute("href")))
+    .filter(Boolean);
+  const activeSection = sections
+    .filter((section) => section.getBoundingClientRect().top <= 150)
+    .pop() || sections[0];
+
+  elements.navLinks.forEach((link) => {
+    link.classList.toggle("is-active", link.getAttribute("href") === `#${activeSection.id}`);
+  });
+}
+
+function getNextMilestoneRemaining(totalShares) {
+  return Math.max(getNextMilestone(totalShares) - totalShares, 0);
+}
+
+function getNextMilestone(totalShares) {
+  return [25, 50, 75, 100].find((milestone) => totalShares < milestone) ?? 100;
+}
+
+function getHeroLevel(totalShares) {
+  return totalShares >= 100 ? "MAX" : formatNumber(totalShares, 0);
+}
+
+function getHeroTitle(totalShares) {
+  if (totalShares >= 100) return "傳說投資家";
+  if (totalShares >= 75) return "伊藤忠騎士";
+  if (totalShares >= 50) return "配息獵人";
+  if (totalShares >= 25) return "穩健投資家";
+  return "見習股東";
 }
 
 function renderOrders() {
@@ -516,8 +612,11 @@ function render() {
   state.rules.mediumMaxShares = Number(elements.mediumMaxShares.value) || 0;
   state.rules.largeDropPercent = Number(elements.largeDropPercent.value) || 0;
   state.rules.largeMaxShares = Number(elements.largeMaxShares.value) || 0;
+  state.annualDividendPerShare = parseNumber(elements.annualDividendPerShare.value) ?? defaults.annualDividendPerShare;
 
   renderOverview();
+  renderMilestones();
+  renderTargetPreview();
   renderCost();
   renderEvaluation();
   renderOrders();
@@ -635,34 +734,6 @@ function deleteTrade(id) {
   render();
 }
 
-function importCsv() {
-  const text = elements.csvInput.value.trim();
-  if (!text) return;
-
-  const rows = text.split(/\r?\n/).filter(Boolean);
-  const dataRows = rows[0].includes("日期") || rows[0].toLowerCase().includes("date") ? rows.slice(1) : rows;
-  const imported = [];
-
-  dataRows.forEach((row) => {
-    const [date, priceText, sharesText, ...noteParts] = row.split(",");
-    const price = Number(priceText);
-    const shares = Number(sharesText);
-    if (!date || !Number.isFinite(price) || !Number.isInteger(shares) || shares <= 0) return;
-    imported.push({
-      id: createId(),
-      date: date.trim(),
-      price,
-      shares,
-      note: noteParts.join(",").trim(),
-    });
-  });
-
-  state.trades.push(...imported);
-  elements.csvStatus.textContent = imported.length ? `已匯入 ${imported.length} 筆交易。` : "沒有可匯入的交易。";
-  elements.csvInput.value = "";
-  render();
-}
-
 function generateNow() {
   render();
   elements.orderPanel.classList.remove("flash-panel");
@@ -679,10 +750,9 @@ function initializeInputs() {
   elements.mediumMaxShares.value = state.rules.mediumMaxShares;
   elements.largeDropPercent.value = state.rules.largeDropPercent;
   elements.largeMaxShares.value = state.rules.largeMaxShares;
+  elements.annualDividendPerShare.value = state.annualDividendPerShare;
   resetBudgetForm();
   setRulesCollapsed(Boolean(state.rulesCollapsed));
-  setActivePeriod(state.chartPeriod || defaults.chartPeriod);
-  setChartCollapsed(Boolean(state.chartCollapsed));
   resetTradeForm();
 }
 
@@ -695,255 +765,21 @@ function setRulesCollapsed(isCollapsed) {
   saveState();
 }
 
-function setChartCollapsed(isCollapsed) {
-  state.chartCollapsed = isCollapsed;
-  state.collapseSettingsVersion = defaults.collapseSettingsVersion;
-  elements.chartContent.hidden = isCollapsed;
-  elements.toggleChartButton.textContent = isCollapsed ? "打開走勢圖" : "收起走勢圖";
-  elements.toggleChartButton.setAttribute("aria-expanded", String(!isCollapsed));
-  saveState();
-}
-
-function setActivePeriod(period) {
-  state.chartPeriod = period;
-  elements.periodButtons.forEach((button) => {
-    button.classList.toggle("is-active", button.dataset.period === period);
-  });
-}
-
-function updateChartDebug({ source = "-", apiUrl = "-", statusCode = "-", errorMessage = "-", fallback = false } = {}) {
-  elements.debugSource.textContent = source;
-  elements.debugApiUrl.textContent = apiUrl;
-  elements.debugStatusCode.textContent = String(statusCode);
-  elements.debugErrorMessage.textContent = errorMessage || "-";
-  elements.debugFallback.textContent = fallback ? "是" : "否";
-}
-
-async function loadChart(period = state.chartPeriod || defaults.chartPeriod) {
-  setActivePeriod(period);
-  elements.chartEmpty.hidden = true;
-  elements.chartSourceText.textContent = "資料來源：載入中";
-  elements.chartUpdatedText.textContent = "最後更新：-";
-  const apiUrl = `/api/chart?code=${defaults.stockCode}&period=${encodeURIComponent(period)}`;
-  updateChartDebug({ source: "載入中", apiUrl, statusCode: "-", errorMessage: "-", fallback: false });
-
-  if (!window.Chart) {
-    elements.chartSourceText.textContent = "資料來源：-";
-    elements.chartEmpty.hidden = false;
-    updateChartDebug({
-      source: "-",
-      apiUrl,
-      statusCode: "-",
-      errorMessage: "Chart.js 尚未載入",
-      fallback: Boolean(getManualChartData(period).length),
-    });
-    return;
-  }
-
-  try {
-    const response = await fetch(apiUrl);
-    const payload = await response.json().catch(() => null);
-    if (!response.ok || !payload || !Array.isArray(payload.data) || payload.data.length === 0) {
-      const error = new Error(payload?.error || "chart unavailable");
-      error.statusCode = response.status;
-      error.payload = payload;
-      throw error;
-    }
-
-    renderChart(payload.data);
-    elements.chartSourceText.textContent = `資料來源：${payload.source}`;
-    elements.chartUpdatedText.textContent = `最後更新：${payload.data[payload.data.length - 1].date}`;
-    updateChartDebug({
-      source: payload.source,
-      apiUrl,
-      statusCode: response.status,
-      errorMessage: "-",
-      fallback: false,
-    });
-  } catch (error) {
-    const manualData = getManualChartData(period);
-    const errorMessage = formatChartError(error);
-
-    if (manualData.length) {
-      renderChart(manualData);
-      elements.chartSourceText.textContent = "資料來源：手動匯入 CSV";
-      elements.chartUpdatedText.textContent = `最後更新：${state.chartImportedAt || "-"}｜資料筆數：${manualData.length} 筆`;
-      elements.chartImportStatus.textContent = "API取得失敗，已改用手動匯入資料。";
-      updateChartDebug({
-        source: "手動匯入 CSV",
-        apiUrl,
-        statusCode: error.statusCode || "連線失敗",
-        errorMessage,
-        fallback: true,
-      });
-    } else {
-      showChartError("API取得失敗。可改用手動匯入CSV資料。");
-      updateChartDebug({
-        source: "-",
-        apiUrl,
-        statusCode: error.statusCode || "連線失敗",
-        errorMessage,
-        fallback: false,
-      });
-    }
-  }
-
-  saveState();
-}
-
-function formatChartError(error) {
-  if (!error) return "-";
-  if (error.payload?.error) {
-    const detail = error.payload.detail ? `｜${JSON.stringify(error.payload.detail)}` : "";
-    return `${error.payload.error}${detail}`;
-  }
-  return error.message || String(error);
-}
-
-function showChartError(message) {
-  if (priceChart) {
-    priceChart.destroy();
-    priceChart = null;
-  }
-  elements.chartSourceText.textContent = "資料來源：-";
-  elements.chartUpdatedText.textContent = "最後更新：-";
-  elements.chartEmpty.textContent = message || "目前無法取得走勢資料";
-  elements.chartEmpty.hidden = false;
-}
-
-function getManualChartData(period = state.chartPeriod) {
-  if (!Array.isArray(state.chartData) || !state.chartData.length) return [];
-  const days = period === "1m" ? 45 : period === "6m" ? 220 : 420;
-  const latestTime = Math.max(...state.chartData.map((point) => new Date(point.date).getTime()));
-  const startTime = latestTime - days * 24 * 60 * 60 * 1000;
-  return state.chartData.filter((point) => new Date(point.date).getTime() >= startTime);
-}
-
-function parseChartCsv(text) {
-  const rows = text
-    .trim()
-    .split(/\r?\n/)
-    .map((row) => row.trim())
-    .filter(Boolean);
-
-  if (!rows.length) return [];
-
-  const headers = rows[0].split(",").map((header) => header.trim().toLowerCase());
-  const hasHeader = headers.includes("date") && headers.includes("close");
-  const dateIndex = hasHeader ? headers.indexOf("date") : 0;
-  const closeIndex = hasHeader ? headers.indexOf("close") : 1;
-  const dataRows = hasHeader ? rows.slice(1) : rows;
-  const points = [];
-
-  dataRows.forEach((row) => {
-    const columns = row.split(",").map((column) => column.trim());
-    const date = columns[dateIndex];
-    const close = Number(columns[closeIndex]);
-    if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date) || !Number.isFinite(close)) return;
-    points.push({ date, close });
-  });
-
-  const unique = new Map(points.map((point) => [point.date, point]));
-  return [...unique.values()].sort((a, b) => a.date.localeCompare(b.date));
-}
-
-function importChartCsv() {
-  const points = parseChartCsv(elements.chartCsvInput.value);
-  if (!points.length) {
-    elements.chartImportStatus.textContent = "沒有可匯入的走勢資料。";
-    return;
-  }
-
-  state.chartData = points;
-  state.chartImportedAt = formatDateTime();
-  elements.chartCsvInput.value = "";
-  elements.chartImportStatus.textContent = `已匯入 ${points.length} 筆走勢資料。`;
-  renderChart(getManualChartData(state.chartPeriod));
-  elements.chartSourceText.textContent = "資料來源：手動匯入 CSV";
-  elements.chartUpdatedText.textContent = `最後更新：${state.chartImportedAt}｜資料筆數：${getManualChartData(state.chartPeriod).length} 筆`;
-  elements.chartEmpty.hidden = true;
-  updateChartDebug({
-    source: "手動匯入 CSV",
-    apiUrl: `/api/chart?code=${defaults.stockCode}&period=${encodeURIComponent(state.chartPeriod)}`,
-    statusCode: "未呼叫 API",
-    errorMessage: "-",
-    fallback: true,
-  });
-  saveState();
-}
-
-function clearChartData() {
-  state.chartData = [];
-  state.chartImportedAt = "";
-  elements.chartImportStatus.textContent = "已清除手動走勢資料。";
-  showChartError("目前無法取得走勢資料。可改用手動匯入CSV資料。");
-  updateChartDebug({
-    source: "-",
-    apiUrl: `/api/chart?code=${defaults.stockCode}&period=${encodeURIComponent(state.chartPeriod)}`,
-    statusCode: "-",
-    errorMessage: "手動走勢資料已清除",
-    fallback: false,
-  });
-  saveState();
-}
-
-function renderChart(data) {
-  elements.chartEmpty.hidden = true;
-  const labels = data.map((point) => point.date);
-  const closes = data.map((point) => point.close);
-  if (priceChart) priceChart.destroy();
-
-  priceChart = new Chart(elements.chartCanvas, {
-    type: "line",
-    data: {
-      labels,
-      datasets: [
-        {
-          label: "收盤價",
-          data: closes,
-          borderColor: "#247464",
-          backgroundColor: "rgba(36, 116, 100, 0.12)",
-          borderWidth: 2,
-          pointRadius: 0,
-          tension: 0.25,
-          fill: true,
-        },
-      ],
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false },
-        tooltip: { mode: "index", intersect: false },
-      },
-      scales: {
-        x: {
-          ticks: { maxTicksLimit: 6 },
-          grid: { display: false },
-        },
-        y: {
-          ticks: {
-            callback: (value) => `¥${value}`,
-          },
-        },
-      },
-    },
-  });
-}
-
-["currentPrice", "smallDropPercent", "smallMaxShares", "mediumDropPercent", "mediumMaxShares", "largeDropPercent", "largeMaxShares"].forEach(
+[
+  "currentPrice",
+  "smallDropPercent",
+  "smallMaxShares",
+  "mediumDropPercent",
+  "mediumMaxShares",
+  "largeDropPercent",
+  "largeMaxShares",
+  "annualDividendPerShare",
+].forEach(
   (id) => elements[id].addEventListener("input", render)
 );
 
 elements.generateButton.addEventListener("click", generateNow);
 elements.toggleRulesButton.addEventListener("click", () => setRulesCollapsed(!state.rulesCollapsed));
-elements.toggleChartButton.addEventListener("click", () => setChartCollapsed(!state.chartCollapsed));
-elements.periodButtons.forEach((button) => {
-  button.addEventListener("click", () => loadChart(button.dataset.period));
-});
-elements.importChartCsvButton.addEventListener("click", importChartCsv);
-elements.clearChartDataButton.addEventListener("click", clearChartData);
 
 elements.budgetForm.addEventListener("submit", saveBudget);
 elements.cancelBudgetEditButton.addEventListener("click", resetBudgetForm);
@@ -956,7 +792,6 @@ elements.budgetsBody.addEventListener("click", (event) => {
 
 elements.tradeForm.addEventListener("submit", saveTrade);
 elements.cancelEditButton.addEventListener("click", resetTradeForm);
-elements.importCsvButton.addEventListener("click", importCsv);
 elements.clearTradesButton.addEventListener("click", () => {
   state.trades = [];
   state.seedTradesInitialized = true;
@@ -972,4 +807,5 @@ elements.tradesBody.addEventListener("click", (event) => {
 
 initializeInputs();
 render();
-loadChart(state.chartPeriod);
+updateActiveNav();
+window.addEventListener("scroll", updateActiveNav, { passive: true });

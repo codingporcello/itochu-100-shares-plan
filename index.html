@@ -3,32 +3,89 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>伊藤忠100股計畫助手</title>
-    <link rel="stylesheet" href="styles.css?v=20260605-3">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.9/dist/chart.umd.min.js" defer></script>
+    <title>伊藤忠100股冒險計畫</title>
+    <link rel="stylesheet" href="styles.css?v=20260609-ui-polish-2">
   </head>
   <body>
     <main class="app-shell">
-      <section class="hero">
-        <div>
-          <p class="eyebrow">Itochu 100 Shares Plan</p>
-          <h1>伊藤忠100股計畫助手</h1>
-          <p class="subtitle">長期累積到 100 股的小型個人儀表板，幫你記錄每一次買進，也提醒自己不要衝動加碼。</p>
+      <nav class="game-nav" aria-label="冒險導覽">
+        <a href="#village">🏠 村莊</a>
+        <a href="#bag">🎒 背包</a>
+        <a href="#vault">💰 金庫</a>
+        <a href="#journal">📜 冒險日誌</a>
+        <a href="#achievements">🏆 成就</a>
+        <a href="#orderPanel">🎯 任務</a>
+      </nav>
+
+      <section class="hero" id="village">
+        <div class="hero-title-card">
+          <p class="eyebrow">Itochu 100 Shares Adventure</p>
+          <h1>伊藤忠100股冒險計畫</h1>
+          <p class="subtitle">每天一點點，慢慢累積自己的小寶箱。</p>
+        </div>
+        <div class="hero-character" aria-hidden="true">
+          <div class="pixel-adventurer">
+            <span class="pixel-cape"></span>
+            <span class="pixel-hat"></span>
+            <span class="pixel-face"></span>
+            <span class="pixel-bangs"></span>
+            <span class="pixel-eye left"></span>
+            <span class="pixel-eye right"></span>
+            <span class="pixel-cheek left"></span>
+            <span class="pixel-cheek right"></span>
+            <span class="pixel-scarf"></span>
+            <span class="pixel-tunic"></span>
+            <span class="pixel-glove left"></span>
+            <span class="pixel-glove right"></span>
+            <span class="pixel-boot left"></span>
+            <span class="pixel-boot right"></span>
+            <span class="pixel-sword"></span>
+            <span class="pixel-shield"></span>
+          </div>
+          <div class="daily-quest">
+            <strong>📜 今日任務</strong>
+            <span>✓ 查看今日股價</span>
+            <span>□ 買入1股</span>
+            <em>🎁 任務目標：累積100股</em>
+          </div>
         </div>
         <div class="hero-visual">
+          <span class="hero-cloud cloud-one" aria-hidden="true"></span>
+          <span class="hero-cloud cloud-two" aria-hidden="true"></span>
+          <span class="hero-sign" aria-hidden="true">100股</span>
+          <span class="hero-mushroom" aria-hidden="true"></span>
+          <span class="hero-pet" aria-hidden="true"></span>
           <img src="assets/itochu-cute-mascot.png" alt="">
-          <div class="stock-badge">
-            <span id="stockCodeText">8001</span>
-            <strong id="stockNameText">伊藤忠</strong>
+          <div class="stock-badge character-card">
+            <div class="character-card-head">
+              <span>冒險者：<b>子綱</b></span>
+              <strong>LV.<span id="heroLevelText">0</span></strong>
+            </div>
+            <div class="character-stats">
+              <span>職業：<b>伊藤忠冒險家</b></span>
+              <span>稱號：<b id="heroTitleText">見習股東</b></span>
+              <span>目前持股：<b id="heroCurrentSharesText">0股</b></span>
+              <span>下一里程碑：<b id="heroNextMilestoneText">25股</b></span>
+              <span>剩餘：<b id="heroRemainingSharesText">25股</b></span>
+              <span>完成率：<b id="heroCompletionText">0%</b></span>
+            </div>
+            <div class="exp-label">
+              <span>EXP</span>
+              <b id="heroExpText">0 / 100</b>
+            </div>
+            <div class="progress-track mini exp-track" aria-label="冒險者經驗值">
+              <span id="heroExpBar"></span>
+            </div>
+            <em><span id="stockNameText">伊藤忠</span> <span id="stockCodeText">8001</span></em>
           </div>
         </div>
       </section>
 
-      <section class="panel overview-panel">
+      <section class="panel overview-panel" id="bag">
         <div class="panel-heading">
           <div>
-            <p class="section-label">Progress</p>
-            <h2>持股總覽</h2>
+            <p class="section-label">Status</p>
+            <h2>我的狀態</h2>
           </div>
           <span class="status-pill" id="progressPill">第 0 股</span>
         </div>
@@ -72,11 +129,11 @@
       </section>
 
       <section class="dashboard-grid">
-        <section class="panel">
+        <section class="panel cost-panel" id="vault">
           <div class="panel-heading">
             <div>
-              <p class="section-label">Cost</p>
-              <h2>成本追蹤</h2>
+              <p class="section-label">Adventure</p>
+              <h2>本月冒險狀況</h2>
             </div>
           </div>
 
@@ -91,7 +148,7 @@
             </div>
           </div>
 
-          <button class="primary-button generate-button" type="button" id="generateButton">產生建議</button>
+          <button class="primary-button generate-button" type="button" id="generateButton">查看詳情</button>
 
           <div class="metric-grid cost-grid">
             <div class="metric">
@@ -117,13 +174,13 @@
           </div>
         </section>
 
-        <section class="panel">
+        <section class="panel rules-panel">
           <div class="panel-heading">
             <div>
-              <p class="section-label">Guardrail</p>
-              <h2>個人規則設定</h2>
+              <p class="section-label">Settings</p>
+              <h2>冒險規則設定</h2>
             </div>
-            <button class="ghost-button" type="button" id="toggleRulesButton" aria-expanded="false">打開個人規則</button>
+            <button class="ghost-button" type="button" id="toggleRulesButton" aria-expanded="false">打開規則</button>
           </div>
 
           <div id="rulesContent">
@@ -186,93 +243,97 @@
 
             <p class="soft-note" id="ruleNote">掛單價格會依目前價格動態計算，不再綁定固定價位。</p>
           </div>
+          <p class="rules-collapsed-note">設定小買 / 中買 / 大買規則後，系統會根據目前價格與預算給出今日建議。</p>
         </section>
       </section>
 
-      <section class="panel chart-panel">
-        <div class="panel-heading">
-          <div>
-            <p class="section-label">Chart</p>
-            <h2>走勢圖</h2>
-          </div>
-          <div class="chart-actions">
-            <div class="segmented-control" role="group" aria-label="走勢期間">
-              <button type="button" class="period-button is-active" data-period="1m">1個月</button>
-              <button type="button" class="period-button" data-period="6m">6個月</button>
-              <button type="button" class="period-button" data-period="1y">1年</button>
-            </div>
-            <button class="ghost-button" type="button" id="toggleChartButton" aria-expanded="false">打開走勢圖</button>
-          </div>
-        </div>
-
-        <div id="chartContent">
-          <div class="chart-meta">
-            <span id="chartSourceText">資料來源：等待載入</span>
-            <span id="chartUpdatedText">最後更新：-</span>
-          </div>
-          <div class="chart-wrap">
-            <canvas id="priceChart" aria-label="伊藤忠收盤價走勢圖"></canvas>
-            <p class="empty-state chart-empty" id="chartEmpty" hidden>目前無法取得走勢資料</p>
-          </div>
-
-          <details class="debug-box" open>
-            <summary>Debug</summary>
-            <dl>
-              <div>
-                <dt>使用的資料來源</dt>
-                <dd id="debugSource">-</dd>
-              </div>
-              <div>
-                <dt>API URL</dt>
-                <dd id="debugApiUrl">-</dd>
-              </div>
-              <div>
-                <dt>回應狀態碼</dt>
-                <dd id="debugStatusCode">-</dd>
-              </div>
-              <div>
-                <dt>錯誤訊息</dt>
-                <dd id="debugErrorMessage">-</dd>
-              </div>
-              <div>
-                <dt>是否進入備援資料源</dt>
-                <dd id="debugFallback">否</dd>
-              </div>
-            </dl>
-          </details>
-
-          <div class="chart-import">
-            <div class="chart-import-heading">
-              <div>
-                <strong>手動匯入走勢資料</strong>
-                <span>API 失敗時可貼上 CSV，圖表會使用 close 畫線。</span>
-              </div>
-              <button class="ghost-button" type="button" id="clearChartDataButton">清除走勢資料</button>
-            </div>
-            <textarea id="chartCsvInput" rows="5" spellcheck="false" placeholder="date,open,high,low,close,volume&#10;2026-06-01,1850,1870,1840,1860,1000000&#10;2026-06-02,1860,1880,1830,1850,1200000&#10;&#10;或：&#10;date,close&#10;2026-06-01,1860&#10;2026-06-02,1850"></textarea>
-            <div class="button-row left">
-              <button class="primary-button" type="button" id="importChartCsvButton">匯入走勢資料</button>
-              <span class="soft-note" id="chartImportStatus"></span>
+      <section class="milestone-layout">
+        <section class="panel milestone-panel" id="achievements">
+          <div class="panel-heading">
+            <div>
+              <p class="section-label">Milestone</p>
+              <h2>里程碑成就</h2>
             </div>
           </div>
-        </div>
+
+          <div class="milestone-grid" id="milestoneGrid" aria-label="100股里程碑">
+            <div class="milestone-card" data-milestone="25">
+              <span>見習股東</span>
+              <small>25股成就</small>
+              <div class="milestone-progress"><i></i></div>
+              <strong id="milestone25Text">あと25股</strong>
+            </div>
+            <div class="milestone-card" data-milestone="50">
+              <span>穩健投資家</span>
+              <small>50股成就</small>
+              <div class="milestone-progress"><i></i></div>
+              <strong id="milestone50Text">あと50股</strong>
+            </div>
+            <div class="milestone-card" data-milestone="75">
+              <span>配息獵人</span>
+              <small>75股成就</small>
+              <div class="milestone-progress"><i></i></div>
+              <strong id="milestone75Text">あと75股</strong>
+            </div>
+            <div class="milestone-card" data-milestone="100">
+              <span>伊藤忠騎士</span>
+              <small>100股成就</small>
+              <div class="milestone-progress"><i></i></div>
+              <strong id="milestone100Text">あと100股</strong>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel target-panel">
+          <div class="panel-heading">
+            <div>
+              <p class="section-label">Treasure</p>
+              <h2>100股達成後預估</h2>
+            </div>
+          </div>
+
+          <label class="field dividend-field">
+            <span>每股年股息</span>
+            <input id="annualDividendPerShare" type="number" inputmode="decimal" min="0" step="1" value="200">
+          </label>
+
+          <div class="target-summary-grid">
+            <div class="target-summary-item">
+              <span>目標股數</span>
+              <strong id="targetGoalSharesText">100股</strong>
+            </div>
+            <div class="target-summary-item">
+              <span>預估總投入</span>
+              <strong id="targetTotalInvestedText">資料不足</strong>
+            </div>
+            <div class="target-summary-item">
+              <span>預估年股息</span>
+              <strong id="targetAnnualDividendText">¥20,000</strong>
+            </div>
+            <div class="target-summary-item">
+              <span>目前完成率</span>
+              <strong id="targetCompletionText">0%</strong>
+            </div>
+          </div>
+        </section>
       </section>
 
-      <section class="panel" id="orderPanel">
+      <section class="panel quest-panel" id="orderPanel">
         <div class="panel-heading">
           <div>
-            <p class="section-label">Orders</p>
-            <h2>今日掛單建議</h2>
+            <p class="section-label">Quest</p>
+            <h2>🍄 菇菇商人の建議</h2>
           </div>
           <span class="status-pill" id="orderStatus">待輸入</span>
         </div>
 
-        <div class="evaluation-box" id="evaluationBox">
+        <div class="evaluation-box npc-dialog" id="evaluationBox">
+          <div class="npc-avatar" aria-hidden="true"></div>
           <div>
-            <span>今日評價</span>
+            <span id="npcNameText">村長</span>
             <strong id="todayRating">等待價格</strong>
+            <p id="todayReason">輸入目前價格後，會顯示是否適合加碼。</p>
           </div>
-          <p id="todayReason">輸入目前價格後，會顯示是否適合加碼。</p>
         </div>
 
         <div class="warning-box" id="warningBox">
@@ -298,11 +359,11 @@
         </div>
       </section>
 
-      <section class="panel">
+      <section class="panel records-panel" id="journal">
         <div class="panel-heading">
           <div>
             <p class="section-label">Records</p>
-            <h2>交易紀錄</h2>
+            <h2>📜 冒險日誌 / 交易紀錄</h2>
           </div>
           <button class="ghost-button" type="button" id="clearTradesButton">清空紀錄</button>
         </div>
@@ -369,15 +430,6 @@
           <button class="ghost-button" type="button" id="cancelEditButton" hidden>取消編輯</button>
         </form>
 
-        <details class="csv-box">
-          <summary>匯入 CSV</summary>
-          <textarea id="csvInput" rows="5" spellcheck="false" placeholder="日期,價格,股數,備註&#10;2026-05-26,1920,10,初始建倉&#10;2026-05-27,1918,10,加碼&#10;2026-06-04,1850,1,NISA"></textarea>
-          <div class="button-row left">
-            <button class="ghost-button" type="button" id="importCsvButton">匯入</button>
-            <span class="soft-note" id="csvStatus"></span>
-          </div>
-        </details>
-
         <div class="table-wrap">
           <table>
             <thead>
@@ -394,23 +446,8 @@
         </div>
       </section>
 
-      <section class="panel future-panel">
-        <div class="panel-heading">
-          <div>
-            <p class="section-label">Future</p>
-            <h2>未來預留功能</h2>
-          </div>
-        </div>
-        <div class="future-grid">
-          <span>API自動同步</span>
-          <span>NISA追蹤</span>
-          <span>月度投入統計</span>
-          <span>配息追蹤</span>
-          <span>投資日誌</span>
-        </div>
-      </section>
     </main>
 
-    <script src="script.js?v=20260605-3"></script>
+    <script src="script.js?v=20260609-ui-polish-2" type="module"></script>
   </body>
 </html>
