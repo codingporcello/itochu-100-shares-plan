@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>伊藤忠100股冒險計畫</title>
-    <link rel="stylesheet" href="styles.css?v=20260609-final-ui-tune-4">
+    <link rel="stylesheet" href="styles.css?v=20260610-number-input-1">
   </head>
   <body>
     <main class="app-shell">
@@ -124,7 +124,7 @@
           <div class="form-grid compact">
             <label class="field">
               <span>目前價格</span>
-              <input id="currentPrice" type="number" inputmode="decimal" min="0" step="0.5" placeholder="例：1851">
+              <input id="currentPrice" type="text" inputmode="decimal" pattern="[0-9.]*" data-number-mode="decimal" placeholder="例：1851">
             </label>
             <div class="budget-inline">
               <span>本月剩餘金額</span>
@@ -370,7 +370,7 @@
               </label>
               <label class="field">
                 <span>當月預算</span>
-                <input id="budgetAmount" type="number" inputmode="decimal" min="0" step="1" placeholder="例：50000" required>
+                <input id="budgetAmount" type="text" inputmode="numeric" pattern="[0-9]*" data-number-mode="integer" placeholder="例：50000" required>
               </label>
               <label class="field">
                 <span>備註</span>
@@ -408,11 +408,11 @@
           </label>
           <label class="field">
             <span>買入價格</span>
-            <input id="tradePrice" type="number" inputmode="decimal" min="0" step="0.5" required>
+            <input id="tradePrice" type="text" inputmode="decimal" pattern="[0-9.]*" data-number-mode="decimal" required>
           </label>
           <label class="field">
             <span>股數</span>
-            <input id="tradeShares" type="number" inputmode="numeric" min="1" step="1" required>
+            <input id="tradeShares" type="text" inputmode="numeric" pattern="[0-9]*" data-number-mode="integer" required>
           </label>
           <label class="field">
             <span>備註</span>
@@ -440,6 +440,6 @@
 
     </main>
 
-    <script src="script.js?v=20260609-final-ui-tune-4" type="module"></script>
+    <script src="script.js?v=20260610-number-input-1" type="module"></script>
   </body>
 </html>

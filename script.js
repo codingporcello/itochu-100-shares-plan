@@ -214,6 +214,29 @@ function parseNumber(value) {
   return Number.isFinite(number) ? number : null;
 }
 
+function sanitizeNumberInput(input) {
+  const mode = input.dataset.numberMode;
+  if (!mode) return;
+
+  const previousValue = input.value;
+  let nextValue = previousValue.replace(/[^\d.]/g, "");
+
+  if (mode === "integer") {
+    nextValue = nextValue.replace(/\D/g, "");
+  } else {
+    const [integerPart, ...decimalParts] = nextValue.split(".");
+    nextValue = decimalParts.length ? `${integerPart}.${decimalParts.join("")}` : integerPart;
+  }
+
+  if (nextValue !== previousValue) {
+    input.value = nextValue;
+  }
+}
+
+function sanitizeAllNumberInputs() {
+  document.querySelectorAll("[data-number-mode]").forEach(sanitizeNumberInput);
+}
+
 function formatYen(value) {
   if (!Number.isFinite(value)) return "-";
   return new Intl.NumberFormat("ja-JP", {
@@ -618,6 +641,7 @@ function renderBudgets() {
 }
 
 function render() {
+  sanitizeAllNumberInputs();
   state.currentPrice = elements.currentPrice.value;
   state.targetShares = defaults.targetShares;
   state.rules.smallDropPercent = Number(elements.smallDropPercent.value) || 0;
@@ -844,6 +868,10 @@ function setBudgetCollapsed(isCollapsed, animate = true) {
 ].forEach(
   (id) => elements[id].addEventListener("input", render)
 );
+
+document.querySelectorAll("[data-number-mode]").forEach((input) => {
+  input.addEventListener("input", () => sanitizeNumberInput(input));
+});
 
 elements.generateButton.addEventListener("click", generateNow);
 elements.toggleRulesButton.addEventListener("click", () => setRulesCollapsed(!state.rulesCollapsed));
